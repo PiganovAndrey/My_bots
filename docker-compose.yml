@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+    my_bots:
+        container_name: my_bots
+        restart: always
+        build:
+            context: ./
+            dockerfile: Dockerfile_local
+        expose:
+            - '5000'
+        ports:
+            - '127.0.0.1:5000:5000'
+        volumes:
+            - ./:/app
+            - /app/node_modules
+        environment:
+            - NODE_ENV=${NODE_ENV} #production development
+            - PORT=${PORT}
+            - ODIN_EMAIL=${ODIN_EMAIL}
+            - ODIN_PASSWORD=${ODIN_PASSWORD}
+            - LOG_LEVEL=${LOG_LEVEL}
+            - DATABASE_URL=postgresql://root:root@bots_db:5432/schedule?schema=public
+            # - DEBUG=puppeteer:*
+    postgres:
+        image: postgres:16-alpine
+        container_name: bots_db
+        restart: always
+        environment:
+            - POSTGRES_USER=root
+            - POSTGRES_PASSWORD=root
+        ports:
+            - '5430:5432'
+        volumes:
+            - ./db-volumes/database/postgres:/var/lib/postgresql/data
+networks:
+    my_bots_network:
+        driver: bridge

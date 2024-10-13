@@ -1,0 +1,36 @@
+FROM node:slim
+
+# We don't need the standalone Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Install Google Chrome Stable and fonts
+# Note: this installs the necessary libs to make the browser work with Puppeteer.
+RUN apt-get update && apt-get install gnupg wget -y && \
+  wget --quiet --output-document=- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /etc/apt/trusted.gpg.d/google-archive.gpg && \
+  sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
+  apt-get update && \
+  apt-get install google-chrome-stable -y --no-install-recommends && \
+  apt-get install -y tzdata && \
+  rm -rf /var/lib/apt/lists/*
+
+# Установка временной зоны (замените на нужную)
+ENV TZ=Europe/Moscow
+
+WORKDIR /app
+
+COPY package*.json /app/
+COPY . .
+
+# Установка зависимостей
+RUN npm install && npx puppeteer browsers install chrome
+
+# Создание директорий для логов и сессий
+RUN mkdir -p var/log && mkdir -p session/odin
+
+# Очистка после установки пакетов
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 5000
+
+CMD ["npm", "run", "start:dev"]

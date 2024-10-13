@@ -1,0 +1,33 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model subjects {
+    id          Int       @id @default(autoincrement())
+    name        String    @db.VarChar  @unique
+    link        String    @db.VarChar
+    tasks       tasks[]
+    created_at  DateTime  @default(now())
+    updated_at  DateTime  @updatedAt
+}
+
+model tasks {
+    id          Int       @id @default(autoincrement())
+    start_time  DateTime  
+    subject     subjects? @relation(fields: [subject_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+    subject_id  Int?
+    types       TaskType[]   // Массив типов задач (ботов, которые выполняют задачу)
+    created_at  DateTime     @default(now())
+    updated_at  DateTime     @updatedAt
+}
+
+enum TaskType {
+    ZOOM
+    ODIN
+}

@@ -1,0 +1,4 @@
+node_modules
+Dockerfile_local
+Dockerfile_prod
+.dockerignore
