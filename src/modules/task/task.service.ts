@@ -9,6 +9,7 @@ import * as cron from 'node-cron';
 import startOdinOnline from 'scripts/odinOnlineBot';
 import startZoomClass from 'scripts/runZoomBot';
 import { TaskWithSubject } from './dto/taskWithSubject';
+import runWithRetries from '../../utils/runWithRetries';
 
 @Injectable()
 export class TaskService implements OnModuleInit {
@@ -189,7 +190,7 @@ export class TaskService implements OnModuleInit {
 
                     case 'ZOOM':
                         this.logger.log(`Запуск скрипта для Zoom конференции для задачи ${task.id}`);
-                        await startZoomClass(task.subject.link, task.subject.name);
+                        await runWithRetries(() => startZoomClass(task.subject.link, task.subject.name));
                         break;
 
                     default:

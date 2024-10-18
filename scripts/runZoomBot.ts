@@ -2,6 +2,8 @@ import puppeteer from 'puppeteer';
 import formatTime from '../src/utils/formatTime';
 import { getCurrentDay } from '../src/utils/getCurrentDay';
 import logger from '../src/utils/logger';
+import exclusiveScript from './exclusiveScript';
+import delay from 'src/utils/delay';
 
 export default async function startZoomClass(link: string, className: string): Promise<void> {
     try {
@@ -21,6 +23,8 @@ export default async function startZoomClass(link: string, className: string): P
                 '--allow-file-access',
                 '--no-sandbox',
                 '--disable-setuid-sandbox'
+                // '--accept-cookies', // Пробуем автоматически принимать cookies
+                // '--disable-features=SameSiteByDefaultCookies' // Отключение обработки SameSite
             ],
             ignoreDefaultArgs: ['--mute-audio'],
             protocolTimeout: 0,
@@ -34,11 +38,6 @@ export default async function startZoomClass(link: string, className: string): P
         await context.overridePermissions('https://app.zoom.us', ['microphone', 'camera']);
 
         const page = await browser.newPage();
-        // page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));
-        // page.on('response', (response) => console.log('Received response:', response.url()));
-        // page.on('requestfailed', (request) =>
-        //     console.log('Request failed:', request.url(), request.failure().errorText)
-        // ); // Для отладки, увидеть логи браузере и тд...
 
         await page.setUserAgent(
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'
@@ -68,11 +67,27 @@ export default async function startZoomClass(link: string, className: string): P
 
         await page2.close();
 
+        await page.screenshot({ path: 'page.png' });
+
+        // const testIFrame = await page.$('iframe'); // Для стран ЕС
+
+        // const testFrame = await testIFrame.contentFrame(); // для стран ЕС
+
+        // await testFrame.waitForSelector('button[id="onetrust-accept-btn-handler"]'); // Для стран ЕС
+
+        // await testFrame.click('button[id="onetrust-accept-btn-handler"]'); // Для стран ЕС
+
         await page.waitForSelector('a[download]', { timeout: 60000 });
 
         await page.click('a[download]');
 
+        await page.screenshot({ path: 'screens/download.png' });
+
         await page.waitForSelector('a[web_client]');
+
+        await delay(15000);
+
+        await page.screenshot({ path: 'screens/webClient.png' });
 
         const response = await Promise.all([
             page.click('a[web_client]'), // Клик по элементу
@@ -84,6 +99,10 @@ export default async function startZoomClass(link: string, className: string): P
         const iframeElement = await page.$('iframe');
 
         const frame = await iframeElement.contentFrame();
+
+        // await frame.waitForSelector('button[id="wc_agree1"]', { visible: true }); // Для стран ЕС
+
+        // await frame.click('button[id="wc_agree1"]'); // Для стран ЕС
 
         await frame.waitForSelector('input[type="text"]', { visible: true });
 
@@ -99,11 +118,14 @@ export default async function startZoomClass(link: string, className: string): P
 
             await frame.click('div[class="preview-video__control-button-container simple"]');
 
-            logger.info('Отлично подключили звук для конференции');
+            logger.warn('Отлично подключили звук для конференции, она еще не началась');
         } catch {
             await frame.waitForSelector(
-                'button[class="zm-btn join-audio-by-voip__join-btn zm-btn--primary zm-btn__outline--white zm-btn--lg"]'
+                'button[class="zm-btn join-audio-by-voip__join-btn zm-btn--primary zm-btn__outline--white zm-btn--lg"]',
+                { visible: true, timeout: 0 }
             );
+
+            await delay(10000);
 
             await frame.click(
                 'button[class="zm-btn join-audio-by-voip__join-btn zm-btn--primary zm-btn__outline--white zm-btn--lg"]'
@@ -112,18 +134,34 @@ export default async function startZoomClass(link: string, className: string): P
             logger.warn('Конференция уже работает и подключили звук');
         }
 
+        await page.screenshot({ path: 'screens/btn.png' });
+
+        await delay(15000);
+
         logger.info('Бот вошел в конференцию');
 
-        const closeTime = 90 * 60 * 1000; // 90 минут в миллисекундах
+        await page.screenshot({ path: 'screens/conference.png' });
 
-        await new Promise(() => {
+        if (className === 'Тестовый блок' || className === 'Технология разработки и защиты баз данных') {
+            logger.info('Обработка ответов эксклюзив для Базы данных');
+
+            await exclusiveScript(frame, page);
+        }
+
+        await page.screenshot({ path: 'screens/screenshot4.png' });
+
+        const closeTime = 90 * 60 * 1000;
+
+        await new Promise<void>((resolve) => {
             setTimeout(async () => {
+                await page.screenshot({ path: 'screens/screenshot5.png' });
                 await page.close();
                 await browser.close();
                 const endDateWork = new Date();
                 const endTime = formatTime(endDateWork);
                 logger.info('Браузер закрыт через полтора часа');
                 logger.info(`Задача закончилась в ${dayOfWeek} ${endTime}`);
+                resolve();
             }, closeTime);
         });
 

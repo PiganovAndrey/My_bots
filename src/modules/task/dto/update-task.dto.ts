@@ -27,6 +27,7 @@ export class UpdateTaskDto {
     @IsOptional()
     start_time: string;
 
+    @IsOptional()
     @IsArray()
     @IsEnum(TaskType, { each: true }) // Проверка, что каждый элемент массива — это валидное значение из перечисления TaskType
     types: TaskType[];

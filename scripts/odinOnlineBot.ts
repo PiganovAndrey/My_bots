@@ -3,9 +3,12 @@ import formatTime from '../src/utils/formatTime';
 import { getCurrentDay } from '../src/utils/getCurrentDay';
 import logger from '../src/utils/logger';
 import { ConfigService } from '@nestjs/config';
+import fs from 'fs';
+import path from 'path';
 
 export default async function startOdinOnline(): Promise<void> {
     const configService = new ConfigService();
+    const userDataDir = './session/odin';
 
     try {
         const now = new Date();
@@ -24,7 +27,7 @@ export default async function startOdinOnline(): Promise<void> {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu'
             ],
-            userDataDir: './session/odin'
+            userDataDir
         });
 
         const page = await browser.newPage();
@@ -62,6 +65,20 @@ export default async function startOdinOnline(): Promise<void> {
 
         await browser.close();
     } catch (error) {
+        logger.error('Произошла ошибка', error);
+        const sessionDirRm = path.resolve('session/odin');
+        if (fs.existsSync(sessionDirRm)) {
+            logger.info(`Удаление папки: ${sessionDirRm}`);
+            fs.rm(sessionDirRm, { recursive: true, force: true }, (err) => {
+                if (err) {
+                    logger.error(`Ошибка при удалении папки: ${err.message}`);
+                } else {
+                    logger.info(`Папка ${sessionDirRm} успешно удалена.`);
+                }
+            });
+        } else {
+            logger.info(`Папка ${sessionDirRm} не существует.`);
+        }
         logger.error('Произошла ошибка', error);
         throw error;
     }

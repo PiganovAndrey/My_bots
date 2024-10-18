@@ -5,5 +5,6 @@ export default () => ({
     },
     port: process.env.PORT || 5000,
     logLevel: String(process.env.LOG_LEVEL) || 'debug',
-    nodeEnv: String(process.env.NODE_ENV) || 'development'
+    nodeEnv: String(process.env.NODE_ENV) || 'development',
+    apiProxyKey: String(process.env.API_PROXY_KEY)
 });

@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TaskType } from '@prisma/client';
-import { IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateTaskDto {
     @ApiProperty({
         description: 'Id предмета для которой будет выполняться задача',
         example: '2'
     })
+    @IsOptional()
     @IsInt()
-    @IsNotEmpty()
     subjectId: number;
 
     @ApiProperty({
